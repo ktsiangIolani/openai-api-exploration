@@ -1,4 +1,4 @@
-import openai
+from openai import OpenAI
 from flask import Flask, request
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
@@ -12,7 +12,8 @@ app = Flask(__name__)
 
 #read in the API key from the .env file
 load_dotenv()
-openai.api_key = os.environ["OPEN_AI_KEY"]
+openai_api_key = os.environ["OPEN_AI_KEY"]
+client = OpenAI(api_key = openai_api_key)
 
 #CORS allows for cross-origin requests (ie requests from a different server)
 CORS(app)
@@ -23,7 +24,6 @@ app.config.from_object(Config)
 db=SQLAlchemy(app)
 migrate=Migrate(app, db)
 
-
 # ------------------------------- ROUTES --------------------------------------
 
 @app.route('/api/thesaurus', methods=['POST'])
@@ -33,12 +33,10 @@ def thesaurus():
     return {'message': getSynonym(word)}
 
 def getSynonym(word):
-    prompt = '\nWhat is a better synonym: ' + word + '?'
-    completion = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages = [{"role": "user", "content": prompt}],
-        max_tokens = 1024,
-        temperature = 0.8)
+    prompt = '\nWhat is a better synonym: ' + word + '? Please return a terse list of synonyms.'
+    completion = client.chat.completions.create(
+        messages=[{"role": "user", "content": prompt}],
+        model="gpt-4o")
     message = completion.choices[0].message.content
     return message
 
